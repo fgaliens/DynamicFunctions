@@ -4,6 +4,6 @@ namespace DynamicFunctions.TextAnalysis.Parsing;
 
 public sealed class CloseBracketParser : OneCharTextParser
 {
-    protected override char TargetChar => ')';
-    protected override string TokenType => Tokens.TokenType.CloseBracket;
+    override protected char TargetChar => ')';
+    override protected string TokenType => Tokens.TokenType.CloseBracket;
 }

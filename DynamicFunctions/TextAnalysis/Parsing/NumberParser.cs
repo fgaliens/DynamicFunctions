@@ -7,8 +7,8 @@ public sealed partial class NumberParser : RegexTextParser
     [GeneratedRegex(@"^(\-)?\d+(\.\d+)?")]
     private static partial Regex RegexExpression();
     
-    protected override string TokenType => Tokens.TokenType.Number;
-    protected override Regex GetRegex()
+    override protected string TokenType => Tokens.TokenType.Number;
+    override protected Regex GetRegex()
     {
         return RegexExpression();
     }

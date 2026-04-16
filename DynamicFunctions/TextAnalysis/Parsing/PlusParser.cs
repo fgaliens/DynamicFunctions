@@ -2,6 +2,6 @@ namespace DynamicFunctions.TextAnalysis.Parsing;
 
 public sealed class PlusParser : OneCharTextParser
 {
-    protected override char TargetChar => '+';
-    protected override string TokenType => Tokens.TokenType.PlusOperator;
+    override protected char TargetChar => '+';
+    override protected string TokenType => Tokens.TokenType.PlusOperator;
 }

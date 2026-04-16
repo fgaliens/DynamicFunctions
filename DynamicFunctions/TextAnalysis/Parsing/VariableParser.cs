@@ -7,8 +7,8 @@ public sealed partial class VariableParser : RegexTextParser
     [GeneratedRegex(@"^\w[\w\d]*")]
     private static partial Regex RegexExpression();
     
-    protected override string TokenType => Tokens.TokenType.Text;
-    protected override Regex GetRegex()
+    override protected string TokenType => Tokens.TokenType.Text;
+    override protected Regex GetRegex()
     {
         return RegexExpression();
     }

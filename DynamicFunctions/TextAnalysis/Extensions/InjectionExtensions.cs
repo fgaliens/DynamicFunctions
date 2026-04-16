@@ -19,6 +19,7 @@ public static class InjectionExtensions
             .AddTextParser<NumberParser>()
             .AddTextParser<OpenBracketParser>()
             .AddTextParser<PlusParser>()
+            .AddTextParser<PowParser>()
             .AddTextParser<VariableParser>()
             .AddTextParser<WhitespaceParser>();
 
