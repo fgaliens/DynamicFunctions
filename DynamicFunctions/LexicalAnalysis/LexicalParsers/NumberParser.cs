@@ -8,7 +8,7 @@ namespace DynamicFunctions.LexicalAnalysis.LexicalParsers;
 
 public class NumberParser : ILexicalParser
 {
-    public int Priority => 0x30;
+    public int Priority => 0x100;
 
     public bool TryTokenize(
         ITextTokensWalker textTokensWalker, 

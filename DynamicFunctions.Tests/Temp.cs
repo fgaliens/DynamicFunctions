@@ -11,7 +11,7 @@ public class Temp
     [Fact]
     public void Test1()
     {
-        var functionText = "10 * (x + 8)^2";
+        var functionText = "10 * (x + 8) * sin(x)";
 
         var serviceProvider = new ServiceCollection()
             .AddTextAnalysis()

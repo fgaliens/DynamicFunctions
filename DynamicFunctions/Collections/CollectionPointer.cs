@@ -1,4 +1,4 @@
-namespace DynamicFunctions.Lib.Collections;
+namespace DynamicFunctions.Collections;
 
 public readonly record struct CollectionPointer<T>
 {

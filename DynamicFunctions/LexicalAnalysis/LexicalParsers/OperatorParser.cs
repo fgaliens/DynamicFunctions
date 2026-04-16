@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using DynamicFunctions.LexicalAnalysis.Exceptions;
 using DynamicFunctions.LexicalAnalysis.LexicalTokens;
 using DynamicFunctions.TextAnalysis.Tokens;
 
@@ -7,11 +6,12 @@ namespace DynamicFunctions.LexicalAnalysis.LexicalParsers;
 
 public class OperatorParser : ILexicalParser
 {
-    private readonly HashSet<string> _operators =
-    [
-        TokenType.PlusOperator,
-        TokenType.MultOperator,
-    ];
+    private readonly Dictionary<string, Func<OperatorToken>> _operators = new()
+    {
+        { TokenType.PlusOperator, () => new AddOperatorToken() },
+        { TokenType.MultOperator, () => new MultOperatorToken() },
+        { TokenType.PowOperator, () => new PowOperatorToken() },
+    };
     
     public int Priority => 0x20;
 
@@ -26,17 +26,12 @@ public class OperatorParser : ILexicalParser
             return false;
         }
 
-        if (!_operators.Contains(textToken.Type))
+        if (!_operators.TryGetValue(textToken.Type, out var operatorCreator))
         {
             return false;
         }
 
-        OperatorToken operatorToken = textToken.Type switch
-        {
-            TokenType.PlusOperator => new AddOperatorToken(),
-            TokenType.MultOperator => new MultOperatorToken(),
-            _ => throw new InvalidTextTokenException($"Unexpected token type '{textToken.Type}'")
-        };
+        var operatorToken = operatorCreator();
         
         operatorToken.AddSourceToken(textToken);
         
@@ -44,3 +39,4 @@ public class OperatorParser : ILexicalParser
         return true;
     }
 }
+
