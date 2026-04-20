@@ -2,12 +2,12 @@ using System.Text.RegularExpressions;
 
 namespace DynamicFunctions.TextAnalysis.Parsing;
 
-public sealed partial class VariableParser : RegexTextParser
+public sealed partial class NumberParser : RegexPatternParser
 {
-    [GeneratedRegex(@"^\w[\w\d]*")]
+    [GeneratedRegex(@"^(\-)?\d+(\.\d+)?")]
     private static partial Regex RegexExpression();
     
-    override protected string TokenType => Tokens.TokenType.Text;
+    override protected string TokenType => Tokens.TokenType.Number;
     override protected Regex GetRegex()
     {
         return RegexExpression();

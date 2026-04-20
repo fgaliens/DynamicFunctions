@@ -16,11 +16,13 @@ public static class InjectionExtensions
             .AddTextParser<CloseBracketParser>()
             .AddTextParser<CommaParser>()
             .AddTextParser<MultParser>()
+            .AddTextParser<DivParser>()
             .AddTextParser<NumberParser>()
             .AddTextParser<OpenBracketParser>()
-            .AddTextParser<PlusParser>()
+            .AddTextParser<AddParser>()
+            .AddTextParser<SubParser>()
             .AddTextParser<PowParser>()
-            .AddTextParser<VariableParser>()
+            .AddTextParser<TextParser>()
             .AddTextParser<WhitespaceParser>();
 
         return services;

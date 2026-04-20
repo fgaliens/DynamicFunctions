@@ -1,7 +1,7 @@
 namespace DynamicFunctions.TextAnalysis.Parsing;
 
-public sealed class PowParser : OneCharTextParser
+public sealed class PowParser : TextPatternParser
 {
-    override protected char TargetChar => '^';
+    override protected string Pattern => "^";
     override protected string TokenType => Tokens.TokenType.PowOperator;
 }

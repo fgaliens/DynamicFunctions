@@ -2,7 +2,7 @@ using DynamicFunctions.TextAnalysis.Tokens;
 
 namespace DynamicFunctions.TextAnalysis.Parsing;
 
-public abstract class OneCharTextParser : ITextParser
+public abstract class TextPatternParser : ITextParser
 {
     public int Priority => 1;
 
@@ -10,7 +10,7 @@ public abstract class OneCharTextParser : ITextParser
     {
         token = default;
             
-        if (reader.Text.IsEmpty || reader.Text[0] != TargetChar)
+        if (reader.Text.IsEmpty || !reader.Text[..Pattern.Length].SequenceEqual(Pattern))
         {
             return false;
         }
@@ -18,16 +18,16 @@ public abstract class OneCharTextParser : ITextParser
         token = new TextToken
         {
             Index = reader.Index,
-            Length = 1,
+            Length = Pattern.Length,
             Type = TokenType,
             Source = reader.Source,
         };
     
-        reader.Consume(1);
+        reader.Consume(Pattern.Length);
 
         return true;
     }
     
-    protected abstract char TargetChar { get; }
+    protected abstract string Pattern { get; }
     protected abstract string TokenType { get; }
 }

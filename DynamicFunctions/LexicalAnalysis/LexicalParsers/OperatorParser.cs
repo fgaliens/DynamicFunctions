@@ -8,8 +8,10 @@ public class OperatorParser : ILexicalParser
 {
     private readonly Dictionary<string, Func<OperatorToken>> _operators = new()
     {
-        { TokenType.PlusOperator, () => new AddOperatorToken() },
+        { TokenType.AddOperator, () => new AddOperatorToken() },
+        { TokenType.SubOperator, () => new SubOperatorToken() },
         { TokenType.MultOperator, () => new MultOperatorToken() },
+        { TokenType.DivOperator, () => new DivOperatorToken() },
         { TokenType.PowOperator, () => new PowOperatorToken() },
     };
     

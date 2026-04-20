@@ -3,7 +3,7 @@ using DynamicFunctions.TextAnalysis.Tokens;
 
 namespace DynamicFunctions.TextAnalysis.Parsing;
 
-public abstract class RegexTextParser : ITextParser
+public abstract class RegexPatternParser : ITextParser
 {
     public virtual int Priority => 1;
 

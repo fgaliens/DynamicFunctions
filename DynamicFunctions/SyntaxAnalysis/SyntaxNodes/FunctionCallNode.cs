@@ -1,3 +1,4 @@
+using DynamicFunctions.Compilation;
 using DynamicFunctions.LexicalAnalysis.LexicalTokens;
 
 namespace DynamicFunctions.SyntaxAnalysis.SyntaxNodes;
@@ -12,4 +13,13 @@ public sealed class FunctionCallNode : ISyntaxNode
 
     public FunctionToken Token { get; }
     public IReadOnlyList<ISyntaxNode> Arguments { get; }
+    
+    public void Accept(ICompiler compiler)
+    {
+        foreach (var argument in Arguments)
+        {
+            argument.Accept(compiler);
+        }
+        compiler.CompileNode(this);
+    }
 }

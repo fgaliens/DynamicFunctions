@@ -3,14 +3,14 @@ using DynamicFunctions.LexicalAnalysis.LexicalTokens;
 
 namespace DynamicFunctions.SyntaxAnalysis.SyntaxNodes;
 
-public sealed class VariableNode : ISyntaxNode
+public sealed class ConstantNode : ISyntaxNode
 {
-    public VariableNode(VariableToken token)
+    public ConstantNode(NumberToken token)
     {
         Token = token;
     }
 
-    public VariableToken Token { get; }
+    public NumberToken Token { get; }
     
     public void Accept(ICompiler compiler)
     {

@@ -1,7 +1,7 @@
 namespace DynamicFunctions.TextAnalysis.Parsing;
 
-public sealed class MultParser : OneCharTextParser
+public sealed class MultParser : TextPatternParser
 {
-    override protected char TargetChar => '*';
+    override protected string Pattern => "*";
     override protected string TokenType => Tokens.TokenType.MultOperator;
 }
