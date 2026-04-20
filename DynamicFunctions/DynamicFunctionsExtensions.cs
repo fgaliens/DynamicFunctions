@@ -57,6 +57,11 @@ public class DynamicFunctionConfiguration<TFunc>(IServiceCollection services)
         return this;
     }
     
+    // TODO: Impl
+    // public DynamicFunctionConfiguration<TFunc> AddCompilationStrategy<T>() where T : class, ...
+    // {
+    // }
+    
     public DynamicFunctionConfiguration<TFunc> AddCompiler<T>() where T : class, ICompiler
     {
         services.TryAddSingleton<ICompiler, T>();
