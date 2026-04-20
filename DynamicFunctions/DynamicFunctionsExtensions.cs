@@ -18,7 +18,7 @@ internal static class DynamicFunctionsExtensions
         public IServiceCollection AddDynamicFunctions<TFunction>(Action<DynamicFunctionConfiguration<TFunction>>? cfg = null)
         {
             if (typeof(TFunction) != typeof(long)
-                || typeof(TFunction) != typeof(double))
+                && typeof(TFunction) != typeof(double))
             {
                 throw new UnsupportedFunctionTypeException(typeof(TFunction).Name);
             }
