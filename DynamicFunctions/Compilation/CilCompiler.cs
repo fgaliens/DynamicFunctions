@@ -39,10 +39,12 @@ public class CilCompiler(CilCompilationOptions options) : ICompiler
     {
         var opCode = node.Operator switch
         {
+            // TODO: Impl. strategy
             AddOperatorToken => OpCodes.Add,
             SubOperatorToken => OpCodes.Sub,
             MultOperatorToken => OpCodes.Mul,
             DivOperatorToken => OpCodes.Div,
+            // PowOperatorToken => // TODO: Implement pow 
             _ => throw new UnsupportedOperatorException(node.Operator.GetType().Name),
         };
         
