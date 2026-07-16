@@ -16,7 +16,7 @@ public sealed class BinaryOperatorNode : ISyntaxNode
     public ISyntaxNode Left { get; }
     public ISyntaxNode Right { get; }
     
-    public void Accept(ICompiler compiler)
+    public void Accept(ISyntaxNodeCompiler compiler)
     {
         Left.Accept(compiler);
         Right.Accept(compiler);

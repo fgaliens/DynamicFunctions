@@ -7,7 +7,8 @@ A .NET library for parsing and compiling mathematical expressions into executabl
 - **Runtime expression compilation** - parse string expressions like `"x + y * 2"` and compile them into strongly-typed `Func<>` delegates
 - **Variable support** - define named variables that become function parameters
 - **Custom function definitions** - register your own functions to be called within expressions
-- **Arithmetic operators** - addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), with correct operator precedence
+- **Arithmetic operators** - addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), power (`^`), with correct operator precedence and associativity
+- **Custom operators** - register your own operators with their own precedence and associativity
 - **Parentheses grouping** - override default precedence with brackets
 - **Numeric types** - supports `double` and `long` result types
 - **Extensible pipeline** - plug in custom text parsers, lexical parsers, syntax analyzers, and compilers
@@ -100,6 +101,30 @@ var func = DynamicFunction.Build("x + y")
 Console.WriteLine(func(3L, 5L)); // 8
 ```
 
+### Custom operators
+
+Define an operator token carrying precedence (lower `Priority` value binds tighter) and associativity, then register it with a symbol and the IL to emit (both operands are already on the stack):
+
+```csharp
+class ModOperatorToken : OperatorToken
+{
+    public override int Priority => 0x20; // same tier as * and /
+    public override bool IsRightAssociative => false;
+}
+
+var func = DynamicFunction.Build("1 + 7 % 4")
+    .WithType<double>(cfg => cfg
+        .AddOperator<ModOperatorToken>("%", il => il.Emit(OpCodes.Rem)))
+    .Create();
+
+Console.WriteLine(func()); // 4.0
+```
+
+Each pipeline stage can also be extended separately:
+
+- `AddOperatorDefinition(tokenType, factory)` - map a text token type to an operator token (overrides built-ins for the same token type)
+- `AddCompilationStrategy<T>()` - register an `IOperatorCompilationStrategy` that emits IL for an operator token type (overrides built-ins for the same operator)
+
 ### Extensibility
 
 You can extend the parsing and compilation pipeline through configuration:
@@ -113,6 +138,8 @@ var func = DynamicFunction.Build("2 + 3")
         .AddCompiler<MyCustomCompiler>())
     .Create();
 ```
+
+`AddCompiler<T>` replaces the whole compilation stage. `T` implements `IFunctionCompiler`: it receives the syntax tree and a `CompilationRequest` (return type, argument names) and returns a ready `DynamicMethod`. Services registered in the pipeline (function definitions, operator compilation strategies, etc.) can be injected through its constructor.
 
 ## Requirements
 

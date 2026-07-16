@@ -63,31 +63,17 @@ public static class DynamicFunction
             var tokenizer = serviceProvider.GetRequiredService<ITokenizer>();
             var lexicalAnalyzer = serviceProvider.GetRequiredService<ILexicalAnalyzer>();
             var syntaxAnalyzer = serviceProvider.GetRequiredService<ISyntaxAnalyzer>();
+            var compiler = serviceProvider.GetRequiredService<IFunctionCompiler>();
 
             var tokens = tokenizer.Tokenize(expression);
             var lexicalTokens = lexicalAnalyzer.Analyze(tokens);
             var syntaxNodesTree = syntaxAnalyzer.Analyze(lexicalTokens);
 
-            var dynamicMethod = new DynamicMethod(
-                name: "DynamicFunc",
-                returnType: typeof(T),
-                parameterTypes: args.Select(_ => typeof(T)).ToArray());
-
-            var compiler = serviceProvider.GetService<ICompiler>() ?? new CilCompiler(new CilCompilationOptions
+            return compiler.Compile(syntaxNodesTree, new CompilationRequest
             {
-                DynamicMethod = dynamicMethod,
-                Arguments = args
-                    .Select((x, i) => (Index: i, Arg: x))
-                    .ToDictionary(k => k.Arg, v => v.Index),
-                Functions = serviceProvider.GetServices<FunctionDefinition>()
-                    .ToDictionary(k => k.Name, v => v),
-                Type = NumberType.Double,
+                ReturnType = typeof(T),
+                Arguments = args,
             });
-
-            syntaxNodesTree.Accept(compiler);
-            compiler.Complete();
-
-            return dynamicMethod;
         }
     }
 }

@@ -10,7 +10,7 @@ public abstract class TextPatternParser : ITextParser
     {
         token = default;
             
-        if (reader.Text.IsEmpty || !reader.Text[..Pattern.Length].SequenceEqual(Pattern))
+        if (reader.Text.Length < Pattern.Length || !reader.Text[..Pattern.Length].SequenceEqual(Pattern))
         {
             return false;
         }

@@ -2,9 +2,9 @@ using DynamicFunctions.SyntaxAnalysis.SyntaxNodes;
 
 namespace DynamicFunctions.Compilation;
 
-public interface ICompiler
+public interface ISyntaxNodeCompiler
 {
-    void CompileNode(ConstantNode node);                                                                                                                        
+    void CompileNode(ConstantNode node);
     void CompileNode(VariableNode node);
     void CompileNode(BinaryOperatorNode node);
     void CompileNode(FunctionCallNode node);

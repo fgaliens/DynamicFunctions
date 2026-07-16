@@ -1,20 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using DynamicFunctions.LexicalAnalysis.LexicalTokens;
-using DynamicFunctions.TextAnalysis.Tokens;
 
 namespace DynamicFunctions.LexicalAnalysis.LexicalParsers;
 
-public class OperatorParser : ILexicalParser
+public class OperatorParser(IEnumerable<OperatorDefinition> definitions) : ILexicalParser
 {
-    private readonly Dictionary<string, Func<OperatorToken>> _operators = new()
-    {
-        { TokenType.AddOperator, () => new AddOperatorToken() },
-        { TokenType.SubOperator, () => new SubOperatorToken() },
-        { TokenType.MultOperator, () => new MultOperatorToken() },
-        { TokenType.DivOperator, () => new DivOperatorToken() },
-        { TokenType.PowOperator, () => new PowOperatorToken() },
-    };
-    
+    private readonly Dictionary<string, Func<OperatorToken>> _operators = BuildOperatorsMap(definitions);
+
     public int Priority => 0x20;
 
     public bool TryTokenize(
@@ -39,6 +31,19 @@ public class OperatorParser : ILexicalParser
         
         lexicalToken = operatorToken;
         return true;
+    }
+
+    private static Dictionary<string, Func<OperatorToken>> BuildOperatorsMap(
+        IEnumerable<OperatorDefinition> definitions)
+    {
+        var operators = new Dictionary<string, Func<OperatorToken>>();
+
+        foreach (var definition in definitions)
+        {
+            operators.TryAdd(definition.TokenType, definition.Factory);
+        }
+
+        return operators;
     }
 }
 

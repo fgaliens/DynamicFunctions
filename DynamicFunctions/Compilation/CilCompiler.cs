@@ -1,11 +1,11 @@
 using System.Reflection.Emit;
 using DynamicFunctions.Compilation.Exceptions;
-using DynamicFunctions.LexicalAnalysis.LexicalTokens;
+using DynamicFunctions.Compilation.Strategies;
 using DynamicFunctions.SyntaxAnalysis.SyntaxNodes;
 
 namespace DynamicFunctions.Compilation;
 
-public class CilCompiler(CilCompilationOptions options) : ICompiler
+public class CilCompiler(CilCompilationOptions options) : ISyntaxNodeCompiler
 {
     private readonly ILGenerator _generator = options.DynamicMethod.GetILGenerator();
 
@@ -37,18 +37,10 @@ public class CilCompiler(CilCompilationOptions options) : ICompiler
 
     public void CompileNode(BinaryOperatorNode node)
     {
-        var opCode = node.Operator switch
-        {
-            // TODO: Impl. strategy
-            AddOperatorToken => OpCodes.Add,
-            SubOperatorToken => OpCodes.Sub,
-            MultOperatorToken => OpCodes.Mul,
-            DivOperatorToken => OpCodes.Div,
-            // PowOperatorToken => // TODO: Implement pow 
-            _ => throw new UnsupportedOperatorException(node.Operator.GetType().Name),
-        };
-        
-        _generator.Emit(opCode);
+        var strategy = FindStrategy(node.Operator.GetType())
+            ?? throw new UnsupportedOperatorException(node.Operator.GetType().Name);
+
+        strategy.Compile(_generator, options);
     }
 
     public void CompileNode(FunctionCallNode node)
@@ -72,5 +64,15 @@ public class CilCompiler(CilCompilationOptions options) : ICompiler
         _generator.Emit(OpCodes.Ret);
     }
 
-
+    private IOperatorCompilationStrategy? FindStrategy(Type operatorType)
+    {
+        var type = operatorType;
+        while (type is not null)
+        {
+            if (options.Operators.TryGetValue(type, out var strategy))
+                return strategy;
+            type = type.BaseType;
+        }
+        return null;
+    }
 }

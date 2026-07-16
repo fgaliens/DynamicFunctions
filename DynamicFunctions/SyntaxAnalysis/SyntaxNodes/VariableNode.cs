@@ -12,7 +12,7 @@ public sealed class VariableNode : ISyntaxNode
 
     public VariableToken Token { get; }
     
-    public void Accept(ICompiler compiler)
+    public void Accept(ISyntaxNodeCompiler compiler)
     {
         compiler.CompileNode(this);
     }

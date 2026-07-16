@@ -16,9 +16,9 @@ public sealed class OperatorTokenAnalyzer : ISyntaxContextAnalyzer
 
     private static bool ShouldPop(OperatorToken top, OperatorToken current)
     {
-        if (current is PowOperatorToken && top is PowOperatorToken)
-            return false;
-
-        return top.Priority <= current.Priority;
+        // Lower Priority value means higher precedence.
+        return current.IsRightAssociative
+            ? top.Priority < current.Priority
+            : top.Priority <= current.Priority;
     }
 }

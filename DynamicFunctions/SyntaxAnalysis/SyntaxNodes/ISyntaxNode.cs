@@ -4,5 +4,5 @@ namespace DynamicFunctions.SyntaxAnalysis.SyntaxNodes;
 
 public interface ISyntaxNode
 {
-    void Accept(ICompiler visitor);
+    void Accept(ISyntaxNodeCompiler visitor);
 }

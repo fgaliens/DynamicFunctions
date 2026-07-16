@@ -1,4 +1,5 @@
 using DynamicFunctions.Compilation;
+using DynamicFunctions.Compilation.Strategies;
 using DynamicFunctions.LexicalAnalysis.LexicalParsers;
 using DynamicFunctions.LexicalAnalysis.LexicalTokens;
 using DynamicFunctions.SyntaxAnalysis.ContextAnalysis;
@@ -6,6 +7,7 @@ using DynamicFunctions.SyntaxAnalysis.SyntaxNodes;
 using DynamicFunctions.TextAnalysis.Parsing;
 using DynamicFunctions.TextAnalysis.Tokens;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection.Emit;
 
 namespace DynamicFunctions.Tests;
 
@@ -87,18 +89,30 @@ public class CustomConfigurationTests
     }
 
     [Fact]
-    public void CustomCompiler_IsUsed()
+    public void CustomCompiler_ReceivesRequest_AndProducesMethod()
     {
-        // The custom compiler is registered but since it doesn't emit IL properly,
-        // it should fail at delegate creation or execution
-        Assert.ThrowsAny<Exception>(() =>
-        {
-            var func = DynamicFunction.Build("1 + 2")
-                .WithType<double>(cfg => cfg
-                    .AddCompiler<TrackingCompiler>())
-                .Create();
-            func();
-        });
+        // The custom compiler ignores the tree and compiles "first argument * 2"
+        var func = DynamicFunction.Build("x + 100")
+            .WithType<double>(cfg => cfg
+                .AddCompiler<DoublingFirstArgCompiler>())
+            .Create("x");
+
+        Assert.Equal(42.0, func(21.0));
+    }
+
+    [Fact]
+    public void CustomCompiler_CanInjectRegisteredServices()
+    {
+        // The custom compiler receives registered FunctionDefinitions through DI
+        // and compiles a constant equal to their count
+        var func = DynamicFunction.Build("1")
+            .WithType<double>(cfg => cfg
+                .AddFunctionDefinition("answer", Answer)
+                .AddFunctionDefinition("doubleit", DoubleIt)
+                .AddCompiler<FunctionCountingCompiler>())
+            .Create();
+
+        Assert.Equal(2.0, func());
     }
 
     [Fact]
@@ -138,17 +152,117 @@ public class CustomConfigurationTests
 
         Assert.Equal(3.0, func());
     }
+
+    [Fact]
+    public void CustomOperator_ViaAddOperator_Works()
+    {
+        var func = DynamicFunction.Build("7 % 4")
+            .WithType<double>(cfg => cfg
+                .AddOperator<ModOperatorToken>("%", il => il.Emit(OpCodes.Rem)))
+            .Create();
+
+        Assert.Equal(3.0, func());
+    }
+
+    [Fact]
+    public void CustomOperator_ViaAddOperator_RespectsPrecedence()
+    {
+        var func = DynamicFunction.Build("1 + 7 % 4")
+            .WithType<double>(cfg => cfg
+                .AddOperator<ModOperatorToken>("%", il => il.Emit(OpCodes.Rem)))
+            .Create();
+
+        // ModOperatorToken has mul/div precedence: 1 + (7 % 4) = 4
+        Assert.Equal(4.0, func());
+    }
+
+    [Fact]
+    public void CustomOperator_ViaLowLevelHooks_Works()
+    {
+        var func = DynamicFunction.Build("7 % 4")
+            .WithType<double>(cfg => cfg
+                .AddTextParser<ModuloTextParser>()
+                .AddOperatorDefinition("Modulo", () => new ModOperatorToken())
+                .AddCompilationStrategy<ModOperatorCompilationStrategy>())
+            .Create();
+
+        Assert.Equal(3.0, func());
+    }
+
+    [Fact]
+    public void ConsumerOperatorDefinition_OverridesBuiltIn()
+    {
+        // '+' now produces a custom token whose strategy emits subtraction
+        var func = DynamicFunction.Build("5 + 2")
+            .WithType<double>(cfg => cfg
+                .AddOperatorDefinition(TokenType.AddOperator, () => new CustomAddOperatorToken())
+                .AddCompilationStrategy<CustomAddOperatorCompilationStrategy>())
+            .Create();
+
+        Assert.Equal(3.0, func());
+    }
+
+    [Fact]
+    public void ConsumerCompilationStrategy_OverridesBuiltIn()
+    {
+        // The built-in AddOperatorToken gets a consumer strategy that emits subtraction
+        var func = DynamicFunction.Build("5 + 2")
+            .WithType<double>(cfg => cfg
+                .AddCompilationStrategy<SubtractingAddCompilationStrategy>())
+            .Create();
+
+        Assert.Equal(3.0, func());
+    }
+
+    [Fact]
+    public void CustomRightAssociativeOperator_GroupsRightToLeft()
+    {
+        var func = DynamicFunction.Build("10 ~ 5 ~ 2")
+            .WithType<double>(cfg => cfg
+                .AddOperator<RightAssociativeSubToken>("~", il => il.Emit(OpCodes.Sub)))
+            .Create();
+
+        // 10 - (5 - 2) = 7, not (10 - 5) - 2 = 3
+        Assert.Equal(7.0, func());
+    }
 }
 
 #region Test Helpers - Custom Implementations
 
-public class TrackingCompiler : ICompiler
+public class DoublingFirstArgCompiler : IFunctionCompiler
 {
-    public void CompileNode(ConstantNode node) { }
-    public void CompileNode(VariableNode node) { }
-    public void CompileNode(BinaryOperatorNode node) { }
-    public void CompileNode(FunctionCallNode node) { }
-    public void Complete() { }
+    public DynamicMethod Compile(ISyntaxNode syntaxNodesTree, CompilationRequest request)
+    {
+        var method = new DynamicMethod(
+            name: "CustomFunc",
+            returnType: request.ReturnType,
+            parameterTypes: request.Arguments.Select(_ => request.ReturnType).ToArray());
+
+        var generator = method.GetILGenerator();
+        generator.Emit(OpCodes.Ldarg_0);
+        generator.Emit(OpCodes.Ldc_R8, 2.0);
+        generator.Emit(OpCodes.Mul);
+        generator.Emit(OpCodes.Ret);
+
+        return method;
+    }
+}
+
+public class FunctionCountingCompiler(IEnumerable<FunctionDefinition> functions) : IFunctionCompiler
+{
+    public DynamicMethod Compile(ISyntaxNode syntaxNodesTree, CompilationRequest request)
+    {
+        var method = new DynamicMethod(
+            name: "CustomFunc",
+            returnType: request.ReturnType,
+            parameterTypes: Type.EmptyTypes);
+
+        var generator = method.GetILGenerator();
+        generator.Emit(OpCodes.Ldc_R8, (double)functions.Count());
+        generator.Emit(OpCodes.Ret);
+
+        return method;
+    }
 }
 
 public class ModuloTextParser : ITextParser
@@ -189,6 +303,53 @@ public class CustomSyntaxAnalyzer : ISyntaxContextAnalyzer
 {
     public Type TokenType => typeof(ILexicalToken);
     public void Handle(ILexicalToken token, SyntaxAnalysisContext context) { }
+}
+
+public class ModOperatorToken : OperatorToken
+{
+    public override int Priority => 0x20;
+}
+
+public class ModOperatorCompilationStrategy : IOperatorCompilationStrategy
+{
+    public Type OperatorType => typeof(ModOperatorToken);
+
+    public void Compile(ILGenerator generator, CilCompilationOptions options)
+    {
+        generator.Emit(OpCodes.Rem);
+    }
+}
+
+public class CustomAddOperatorToken : OperatorToken
+{
+    public override int Priority => 0x30;
+}
+
+public class CustomAddOperatorCompilationStrategy : IOperatorCompilationStrategy
+{
+    public Type OperatorType => typeof(CustomAddOperatorToken);
+
+    public void Compile(ILGenerator generator, CilCompilationOptions options)
+    {
+        generator.Emit(OpCodes.Sub);
+    }
+}
+
+public class SubtractingAddCompilationStrategy : IOperatorCompilationStrategy
+{
+    public Type OperatorType => typeof(AddOperatorToken);
+
+    public void Compile(ILGenerator generator, CilCompilationOptions options)
+    {
+        generator.Emit(OpCodes.Sub);
+    }
+}
+
+public class RightAssociativeSubToken : OperatorToken
+{
+    public override int Priority => 0x30;
+
+    public override bool IsRightAssociative => true;
 }
 
 #endregion

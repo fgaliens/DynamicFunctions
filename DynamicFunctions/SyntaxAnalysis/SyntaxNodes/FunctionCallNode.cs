@@ -14,7 +14,7 @@ public sealed class FunctionCallNode : ISyntaxNode
     public FunctionToken Token { get; }
     public IReadOnlyList<ISyntaxNode> Arguments { get; }
     
-    public void Accept(ICompiler compiler)
+    public void Accept(ISyntaxNodeCompiler compiler)
     {
         foreach (var argument in Arguments)
         {

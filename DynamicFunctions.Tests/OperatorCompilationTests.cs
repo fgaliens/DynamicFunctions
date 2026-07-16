@@ -1,5 +1,3 @@
-using DynamicFunctions.Compilation.Exceptions;
-
 namespace DynamicFunctions.Tests;
 
 public class OperatorCompilationTests
@@ -61,16 +59,66 @@ public class OperatorCompilationTests
     }
 
     [Theory]
-    [InlineData("2 ^ 3")]
-    [InlineData("3 ^ 2")]
-    [InlineData("2 ^ 0")]
-    [InlineData("4 ^ 0.5")]
-    public void Power_ThrowsUnsupportedOperatorException(string expression)
+    [InlineData("2 ^ 3", 8.0)]
+    [InlineData("3 ^ 2", 9.0)]
+    [InlineData("2 ^ 0", 1.0)]
+    [InlineData("4 ^ 0.5", 2.0)]
+    public void Power_CompilesAndExecutesCorrectly(string expression, double expected)
     {
-        // Power operator is parsed but not yet implemented in CilCompiler
-        Assert.Throws<UnsupportedOperatorException>(() =>
-            DynamicFunction.Build(expression)
-                .WithType<double>()
-                .Create());
+        var func = DynamicFunction.Build(expression)
+            .WithType<double>()
+            .Create();
+
+        Assert.Equal(expected, func());
+    }
+
+    [Fact]
+    public void Power_IsRightAssociative()
+    {
+        var func = DynamicFunction.Build("2 ^ 3 ^ 2")
+            .WithType<double>()
+            .Create();
+
+        // 2 ^ (3 ^ 2) = 512, not (2 ^ 3) ^ 2 = 64
+        Assert.Equal(512.0, func());
+    }
+
+    [Theory]
+    [InlineData("2 + 3", 5L)]
+    [InlineData("10 - 3", 7L)]
+    [InlineData("3 * 4", 12L)]
+    [InlineData("7 / 2", 3L)]
+    public void LongType_CompilesAndExecutesCorrectly(string expression, long expected)
+    {
+        var func = DynamicFunction.Build(expression)
+            .WithType<long>()
+            .Create();
+
+        Assert.Equal(expected, func());
+    }
+
+    [Theory]
+    [InlineData("2 ^ 3", 8L)]
+    [InlineData("2 ^ 0", 1L)]
+    [InlineData("2 ^ -1", 0L)]
+    [InlineData("3 ^ 39", 4052555153018976267L)]
+    public void LongType_Power_CompilesAndExecutesCorrectly(string expression, long expected)
+    {
+        // 3 ^ 39 exceeds double precision, so the result must be computed in longs
+        var func = DynamicFunction.Build(expression)
+            .WithType<long>()
+            .Create();
+
+        Assert.Equal(expected, func());
+    }
+
+    [Fact]
+    public void LongType_Power_IsRightAssociative()
+    {
+        var func = DynamicFunction.Build("2 ^ 3 ^ 2")
+            .WithType<long>()
+            .Create();
+
+        Assert.Equal(512L, func());
     }
 }

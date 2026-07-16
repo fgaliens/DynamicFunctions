@@ -1,7 +1,11 @@
+using System.Reflection.Emit;
 using DynamicFunctions.Compilation;
 using DynamicFunctions.Compilation.Exceptions;
+using DynamicFunctions.Compilation.Extensions;
+using DynamicFunctions.Compilation.Strategies;
 using DynamicFunctions.LexicalAnalysis.Extensions;
 using DynamicFunctions.LexicalAnalysis.LexicalParsers;
+using DynamicFunctions.LexicalAnalysis.LexicalTokens;
 using DynamicFunctions.SyntaxAnalysis.ContextAnalysis;
 using DynamicFunctions.SyntaxAnalysis.Extensions;
 using DynamicFunctions.TextAnalysis.Extensions;
@@ -32,7 +36,8 @@ internal static class DynamicFunctionsExtensions
             return services
                 .AddTextAnalysis()
                 .AddLexicalAnalysis()
-                .AddSyntaxAnalysis();
+                .AddSyntaxAnalysis()
+                .AddCompilation();
         }
     }
 }
@@ -57,14 +62,41 @@ public class DynamicFunctionConfiguration<TFunc>(IServiceCollection services)
         return this;
     }
     
-    // TODO: Impl
-    // public DynamicFunctionConfiguration<TFunc> AddCompilationStrategy<T>() where T : class, ...
-    // {
-    // }
-    
-    public DynamicFunctionConfiguration<TFunc> AddCompiler<T>() where T : class, ICompiler
+    public DynamicFunctionConfiguration<TFunc> AddOperatorDefinition(string tokenType, Func<OperatorToken> factory)
     {
-        services.TryAddSingleton<ICompiler, T>();
+        services.AddOperatorDefinition(tokenType, factory);
+        return this;
+    }
+
+    public DynamicFunctionConfiguration<TFunc> AddCompilationStrategy<T>() where T : class, IOperatorCompilationStrategy
+    {
+        services.AddCompilationStrategy<T>();
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a custom binary operator across the whole pipeline:
+    /// a text parser for <paramref name="symbol"/>, an operator definition producing
+    /// <typeparamref name="TToken"/> and a compilation strategy emitting <paramref name="emit"/>.
+    /// Precedence and associativity are taken from the token's
+    /// <see cref="OperatorToken.Priority"/> and <see cref="OperatorToken.IsRightAssociative"/>.
+    /// </summary>
+    public DynamicFunctionConfiguration<TFunc> AddOperator<TToken>(string symbol, Action<ILGenerator> emit)
+        where TToken : OperatorToken, new()
+    {
+        var tokenType = typeof(TToken).Name;
+
+        services.AddSingleton<ITextParser>(new SymbolTextParser(symbol, tokenType));
+        services.AddOperatorDefinition(tokenType, () => new TToken());
+        services.AddSingleton<IOperatorCompilationStrategy>(
+            new DelegateOperatorCompilationStrategy(typeof(TToken), emit));
+
+        return this;
+    }
+
+    public DynamicFunctionConfiguration<TFunc> AddCompiler<T>() where T : class, IFunctionCompiler
+    {
+        services.TryAddSingleton<IFunctionCompiler, T>();
         return this;
     }
 
